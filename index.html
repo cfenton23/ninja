@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja Jump</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: 'Courier New', monospace;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+        }
+        
+        body.night {
+            background: linear-gradient(135deg, #0c1445, #1a1a2e);
+        }
+        
+        body.space {
+            background: radial-gradient(ellipse at center, #1a1a3a 0%, #000011 70%, #000000 100%);
+        }
+        
+        #gameContainer {
+            border: 3px solid #fff;
+            border-radius: 10px;
+            background: #0a1a2a;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+        
+        body.night #gameContainer {
+            box-shadow: 0 0 30px rgba(100,150,255,0.5);
+        }
+        
+        body.space #gameContainer {
+            box-shadow: 0 0 40px rgba(255,255,255,0.8);
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 60%, #228B22 60%, #32CD32 100%);
+        }
+        
+        body.night #gameCanvas {
+            background: linear-gradient(to bottom, #1a1a3a 0%, #1a1a3a 60%, #0f2f0f 60%, #1a4a1a 100%);
+        }
+        
+        body.space #gameCanvas {
+            background: radial-gradient(ellipse at center, #000033 0%, #000011 50%, #000000 100%);
+            position: relative;
+        }
+        
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .space-controls {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            font-size: 14px;
+            color: #87CEEB;
+            display: none;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .controls button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .controls button:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
+        
+        .leaderboard {
+            margin-top: 30px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .leaderboard h3 {
+            margin-top: 0;
+            color: #FFD700;
+        }
+        
+        .score-entry {
+            padding: 5px;
+            margin: 2px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        
+        .name-input-screen {
+            text-align: center;
+        }
+        
+        .name-input-screen input {
+            padding: 15px;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            width: 300px;
+            max-width: 80vw;
+        }
+        
+        .name-input-screen button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .shop-screen {
+            text-align: center;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .shop-header {
+            margin-bottom: 30px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #FFD700;
+        }
+        
+        .jump-points {
+            font-size: 28px;
+            color: #FFD700;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-weight: bold;
+        }
+        
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 80px);
+            gap: 15px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        
+        .color-option {
+            width: 60px;
+            height: 60px;
+            border: 3px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .color-option.selected {
+            border-color: #FFD700;
+            transform: scale(1.1);
+        }
+        
+        .color-option.owned {
+            border-color: #4CAF50;
+        }
+        
+        .color-option.affordable {
+            border-color: #2196F3;
+        }
+        
+        .color-option.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .ninja-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+        }
+        
+        .color-price {
+            font-size: 10px;
+            color: #FFD700;
+        }
+        
+        .color-name {
+            font-size: 8px;
+            color: white;
+            text-align: center;
+            margin-top: 2px;
+        }
+        
+        .rainbow {
+            background: linear-gradient(45deg, #ff0000, #ff8000, #ffff00, #80ff00, #00ff00, #00ff80, #00ffff, #0080ff, #0000ff, #8000ff, #ff00ff, #ff0080);
+            background-size: 400% 400%;
+            animation: rainbow 2s linear infinite;
+        }
+        
+        .rainbow-glow {
+            box-shadow: 0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,0,255,0.6), 0 0 60px rgba(0,255,255,0.4);
+        }
+        
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .dev-menu {
+            text-align: center;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.95);
+            padding: 15px;
+            border-radius: 15px;
+            border: 3px solid #FF0000;
+            max-width: 450px;
+            margin: auto;
+        }
+        
+        .dev-section {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(255,0,0,0.1);
+            border-radius: 8px;
+            border: 1px solid #FF0000;
+        }
+        
+        .dev-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .dev-input {
+            padding: 8px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 100px;
+        }
+        
+        .dev-button {
+            background: #FF0000;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        .dev-button:hover {
+            background: #CC0000;
+        }
+        
+        .speed-slider {
+            width: 200px;
+            margin: 10px;
+        }
+        
+        .speed-display {
+            color: #FFD700;
+            font-weight: bold;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #FFD700;
+        }
+        
+        .game-over h2 {
+            color: #FF6B6B;
+            margin-top: 0;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            opacity: 0.8;
+        }
+        
+        .day-night-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .day-night-toggle:hover {
+            background: #45a049;
+        }
+        
+        .connection-status {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .connection-status.online {
+            color: #4CAF50;
+        }
+        
+        .connection-status.offline {
+            color: #FF6B6B;
+        }
+    </style>
+</head>
+<body>
+    <button class="day-night-toggle" onclick="toggleDayNight()">🌙 Night Mode</button>
+    
+    <h1>🥷 Ninja Jump Adventure</h1>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="ui">
+            <div>Score: <span id="score">0</span></div>
+            <div>Jump Points: <span id="jumpPointsDisplay">0</span></div>
+        </div>
+        <div class="space-controls" id="spaceControls">
+            🚀 Space Mode: W/S to fly up/down
+        </div>
+        
+        <div id="nameInputScreen" class="modal-overlay name-input-screen">
+            <h2>🥷 Welcome to Ninja Jump!</h2>
+            <p>What's your ninja's name?</p>
+            <input type="text" id="ninjaNameInput" placeholder="Enter your ninja's name" maxlength="15">
+            <br>
+            <button onclick="setNinjaName()">Start Adventure</button>
+        </div>
+        
+        <div id="shopScreen" class="modal-overlay shop-screen" style="display: none;">
+            <div class="shop-header">
+                <h2>🛍️ Ninja Color Shop</h2>
+                <div class="jump-points">Jump Points: <span id="shopJumpPoints">0</span></div>
+                <p>Select a color to equip or purchase</p>
+            </div>
+            <div class="color-grid" id="colorGrid"></div>
+            <button onclick="startGame()" style="background: #4CAF50; border: none; color: white; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-size: 18px; margin-top: 20px;">Start Game</button>
+        </div>
+        
+        <div id="devMenu" class="modal-overlay dev-menu" style="display: none;">
+            <h2 style="margin: 0 0 15px 0; font-size: 20px;">🔧 Developer Menu</h2>
+            <p style="color: #FF6B6B; margin: 0 0 15px 0; font-size: 14px;">DADDYDEV MODE ACTIVATED</p>
+            
+            <div class="dev-section">
+                <h3>💰 Jump Points</h3>
+                <input type="number" id="pointsInput" class="dev-input" placeholder="Amount" min="0" max="9999">
+                <button onclick="giveJumpPoints()" class="dev-button">Give Points</button>
+            </div>
+            
+            <div class="dev-section">
+                <h3>⚡ Game Speed</h3>
+                <input type="range" id="speedSlider" class="speed-slider" min="0.5" max="2" step="0.1" value="1" onchange="updateGameSpeed()">
+                <div class="speed-display">Speed: <span id="speedValue">1.0x</span></div>
+            </div>
+            
+            <div class="dev-section">
+                <h3>🚀 Space Mode</h3>
+                <button onclick="toggleSpaceMode()" class="dev-button" id="spaceModeBtn">Enable Space Mode</button>
+            </div>
+            
+            <div class="dev-section">
+                <h3>🗑️ Reset Data</h3>
+                <button onclick="resetLeaderboard()" class="dev-button">Reset Leaderboard</button>
+            </div>
+            
+            <button onclick="closeDevMenu()" style="background: #4CAF50; border: none; color: white; padding: 12px 25px; border-radius: 20px; cursor: pointer; font-size: 16px; margin-top: 15px;">Close Menu</button>
+        </div>
+        
+        <div id="gameOver" class="game-over" style="display: none;">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <p>Jump Points Earned: <span id="pointsEarned">0</span></p>
+            <div id="nameInput" style="margin: 15px 0;">
+                <label for="playerName">Player Name:</label><br>
+                <input type="text" id="playerName" maxlength="15" placeholder="Your name" style="padding: 8px; margin: 10px 0; border: none; border-radius: 5px; text-align: center; font-size: 16px;">
+            </div>
+            <button onclick="saveScore()">Save Score & Continue</button>
+        </div>
+        
+        <div class="connection-status" id="connectionStatus">
+            🌐 Checking connection...
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="jump()">Jump</button>
+        <button onclick="showShop()">Color Shop</button>
+        <button onclick="startGame()">Restart Game</button>
+    </div>
+    
+    <div class="instructions">
+        🎮 Controls: Click JUMP button or press spacebar (press twice for double jump)<br>
+        🎯 Jump over or through obstacles to score points! Press SPACE to restart after game over.<br>
+        🌈 Earn jump points to buy new colors! Rainbow costs 150 points!
+    </div>
+    
+    <div class="leaderboard">
+        <h3>🏆 Global Leaderboard</h3>
+        <div id="leaderboardList">Loading...</div>
+    </div>
+
+    <script>
+        // GAME VARIABLES
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = 'nameInput';
+        let score = 0;
+        let obstacles = [];
+        let lastObstacleTime = 0;
+        let gameSpeed = 3;
+        let speedMultiplier = 1;
+        let deathAnimation = { active: false, frame: 0, maxFrames: 30 };
+        let isNightMode = false;
+        let isSpaceMode = false;
+        let ninjaName = '';
+        let jumpPoints = parseInt(localStorage.getItem('jumpPoints') || '0');
+        let isOnline = false;
+        let particles = [];
+        
+        const ninjaColors = [
+            { name: 'Classic', color: '#1a1a2e', price: 0 },
+            { name: 'Crimson', color: '#8B0000', price: 5 },
+            { name: 'Forest', color: '#228B22', price: 10 },
+            { name: 'Ocean', color: '#4682B4', price: 15 },
+            { name: 'Purple', color: '#663399', price: 20 },
+            { name: 'Golden', color: '#DAA520', price: 25 },
+            { name: 'Emerald', color: '#50C878', price: 30 },
+            { name: 'Sapphire', color: '#0F52BA', price: 35 },
+            { name: 'Magenta', color: '#FF00FF', price: 40 },
+            { name: 'Copper', color: '#B87333', price: 45 },
+            { name: 'Violet', color: '#8A2BE2', price: 50 },
+            { name: 'Coral', color: '#FF7F50', price: 55 },
+            { name: 'Teal', color: '#008080', price: 60 },
+            { name: 'Indigo', color: '#4B0082', price: 65 },
+            { name: 'Lime', color: '#32CD32', price: 70 },
+            { name: 'Rose', color: '#FF007F', price: 75 },
+            { name: 'Amber', color: '#FFBF00', price: 80 },
+            { name: 'Mint', color: '#98FB98', price: 85 },
+            { name: 'Phoenix', color: '#FF4500', price: 90 },
+            { name: 'Galaxy', color: '#2E2B5F', price: 95 },
+            { name: 'Cosmic', color: '#483D8B', price: 100 },
+            { name: 'Mystic', color: '#8B008B', price: 105 },
+            { name: 'Stellar', color: '#191970', price: 110 },
+            { name: 'Nebula', color: '#4682B4', price: 115 },
+            { name: 'Fire Grad', color: 'gradient-fire', price: 120 },
+            { name: 'Ice Grad', color: 'gradient-ice', price: 125 },
+            { name: 'Earth Grad', color: 'gradient-earth', price: 130 },
+            { name: 'Storm Grad', color: 'gradient-storm', price: 135 },
+            { name: 'Sunset Grad', color: 'gradient-sunset', price: 140 },
+            { name: 'Ocean Grad', color: 'gradient-ocean', price: 145 },
+            { name: 'Rainbow', color: 'rainbow', price: 150 }
+        ];
+        
+        let selectedColorIndex = 0;
+        let ownedColors = JSON.parse(localStorage.getItem('ownedColors') || '[0]');
+        
+        const ninja = {
+            x: 100,
+            y: 320,
+            width: 30,
+            height: 30,
+            velocityY: 0,
+            velocityX: 0,
+            jumpPower: -15,
+            doubleJumpPower: -12,
+            forwardJumpPower: 4,
+            onGround: true,
+            hasDoubleJump: false
+        };
+        
+        const gravity = 0.7;
+        const groundY = 320;
+        let leaderboard = [];
+        
+        // MAIN FUNCTIONS - AVAILABLE GLOBALLY
+        function toggleDayNight() {
+            isNightMode = !isNightMode;
+            document.body.classList.toggle('night', isNightMode);
+            document.querySelector('.day-night-toggle').textContent = isNightMode ? '☀️ Day Mode' : '🌙 Night Mode';
+        }
+        
+        function setNinjaName() {
+            const input = document.getElementById('ninjaNameInput').value.trim();
+            if (input) {
+                ninjaName = input;
+                localStorage.setItem('ninjaName', ninjaName);
+                
+                if (ninjaName.toUpperCase() === 'NINJAJUMPBOY') {
+                    ownedColors = Array.from({length: ninjaColors.length}, (_, i) => i);
+                    localStorage.setItem('ownedColors', JSON.stringify(ownedColors));
+                    jumpPoints = 999;
+                    localStorage.setItem('jumpPoints', jumpPoints.toString());
+                    updateJumpPointsDisplay();
+                }
+                
+                if (ninjaName.toUpperCase() === 'DADDYDEV') {
+                    document.getElementById('nameInputScreen').style.display = 'none';
+                    document.getElementById('devMenu').style.display = 'flex';
+                    gameState = 'devMenu';
+                    return;
+                }
+                
+                document.getElementById('nameInputScreen').style.display = 'none';
+                showShop();
+            }
+        }
+        
+        function jump() {
+            if (gameState !== 'playing' || deathAnimation.active) return;
+            
+            if (!isSpaceMode) {
+                if (ninja.onGround) {
+                    ninja.velocityY = ninja.jumpPower;
+                    ninja.velocityX += ninja.forwardJumpPower;
+                    ninja.onGround = false;
+                    ninja.hasDoubleJump = true;
+                } else if (ninja.hasDoubleJump) {
+                    ninja.velocityY = ninja.doubleJumpPower;
+                    ninja.velocityX += ninja.forwardJumpPower * 0.7;
+                    ninja.hasDoubleJump = false;
+                }
+            } else {
+                ninja.velocityY -= 3;
+            }
+        }
+        
+        function showShop() {
+            gameState = 'shop';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('devMenu').style.display = 'none';
+            document.getElementById('shopScreen').style.display = 'flex';
+            updateColorGrid();
+        }
+        
+        function startGame() {
+            gameState = 'playing';
+            score = 0;
+            gameSpeed = 3;
+            obstacles = [];
+            lastObstacleTime = 0;
+            deathAnimation.active = false;
+            deathAnimation.frame = 0;
+            particles = [];
+            
+            ninja.x = 100;
+            ninja.y = groundY;
+            ninja.velocityY = 0;
+            ninja.velocityX = 0;
+            ninja.onGround = true;
+            ninja.hasDoubleJump = false;
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('shopScreen').style.display = 'none';
+            document.getElementById('devMenu').style.display = 'none';
+        }
+        
+        function saveScore() {
+            saveScoreAsync();
+        }
+        
+        function giveJumpPoints() {
+            const amount = parseInt(document.getElementById('pointsInput').value) || 0;
+            if (amount > 0 && amount <= 9999) {
+                jumpPoints += amount;
+                localStorage.setItem('jumpPoints', jumpPoints.toString());
+                updateJumpPointsDisplay();
+                document.getElementById('pointsInput').value = '';
+            }
+        }
+        
+        function updateGameSpeed() {
+            speedMultiplier = parseFloat(document.getElementById('speedSlider').value);
+            document.getElementById('speedValue').textContent = speedMultiplier.toFixed(1) + 'x';
+        }
+        
+        function toggleSpaceMode() {
+            isSpaceMode = !isSpaceMode;
+            document.body.classList.toggle('space', isSpaceMode);
+            document.getElementById('spaceControls').style.display = isSpaceMode ? 'block' : 'none';
+            document.getElementById('spaceModeBtn').textContent = isSpaceMode ? 'Disable Space Mode' : 'Enable Space Mode';
+        }
+        
+        function resetLeaderboard() {
+            if (confirm('Are you sure you want to reset the leaderboard? This cannot be undone.')) {
+                localStorage.removeItem('localLeaderboard');
+                leaderboard = [];
+                updateLeaderboard();
+                
+                if (isOnline) {
+                    fetch('https://caseyfenton.net/api/leaderboard.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reset: true })
+                    }).catch(() => {});
+                }
+            }
+        }
+        
+        function closeDevMenu() {
+            showShop();
+        }
+        
+        // UTILITY FUNCTIONS
+        function updateJumpPointsDisplay() {
+            document.getElementById('jumpPointsDisplay').textContent = jumpPoints;
+            document.getElementById('shopJumpPoints').textContent = jumpPoints;
+        }
+        
+        function createParticle(x, y, colorType) {
+            if (!colorType.startsWith('gradient-')) return;
+            
+            const colors = getParticleColors(colorType);
+            const isDay = !isNightMode;
+            
+            particles.push({
+                x: x + Math.random() * ninja.width,
+                y: y + Math.random() * ninja.height,
+                vx: (Math.random() - 0.5) * 4 - 2, // Slight backward drift
+                vy: (Math.random() - 0.5) * 4,
+                life: isDay ? 0.8 : 1.0, // Shorter life in day mode
+                decay: isDay ? 0.03 + Math.random() * 0.02 : 0.02 + Math.random() * 0.02,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                size: isDay ? 1.5 + Math.random() * 2 : 2 + Math.random() * 3,
+                isDayMode: isDay
+            });
+        }
+        
+        function getParticleColors(gradientType) {
+            switch(gradientType) {
+                case 'gradient-fire': return ['#FF0000', '#FF4500', '#FFD700'];
+                case 'gradient-ice': return ['#E0FFFF', '#87CEEB', '#4682B4'];
+                case 'gradient-earth': return ['#8B4513', '#A0522D', '#228B22'];
+                case 'gradient-storm': return ['#2F4F4F', '#708090', '#191970'];
+                case 'gradient-sunset': return ['#FF69B4', '#FF4500', '#FFD700'];
+                case 'gradient-ocean': return ['#006400', '#4682B4', '#87CEEB'];
+                default: return ['#FFFFFF'];
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+                p.vy += 0.1;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                
+                if (p.isDayMode) {
+                    // Day mode: subtle glow
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 5;
+                } else {
+                    // Night mode: strong glow
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 15;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+        
+        function getCurrentNinjaColor() {
+            const colorData = ninjaColors[selectedColorIndex];
+            if (colorData.color === 'rainbow') {
+                return 'rainbow';
+            } else if (colorData.color.startsWith('gradient-')) {
+                return colorData.color;
+            }
+            return colorData.color;
+        }
+        
+        function createGradient(type, x, y, width, height) {
+            let gradient;
+            switch(type) {
+                case 'gradient-fire':
+                    gradient = ctx.createLinearGradient(x, y + height, x, y);
+                    gradient.addColorStop(0, '#FF0000');
+                    gradient.addColorStop(0.5, '#FF4500');
+                    gradient.addColorStop(1, '#FFD700');
+                    break;
+                case 'gradient-ice':
+                    gradient = ctx.createLinearGradient(x, y, x, y + height);
+                    gradient.addColorStop(0, '#E0FFFF');
+                    gradient.addColorStop(0.5, '#87CEEB');
+                    gradient.addColorStop(1, '#4682B4');
+                    break;
+                case 'gradient-earth':
+                    gradient = ctx.createLinearGradient(x, y, x, y + height);
+                    gradient.addColorStop(0, '#8B4513');
+                    gradient.addColorStop(0.5, '#A0522D');
+                    gradient.addColorStop(1, '#228B22');
+                    break;
+                case 'gradient-storm':
+                    gradient = ctx.createLinearGradient(x, y, x + width, y);
+                    gradient.addColorStop(0, '#2F4F4F');
+                    gradient.addColorStop(0.5, '#708090');
+                    gradient.addColorStop(1, '#191970');
+                    break;
+                case 'gradient-sunset':
+                    gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+                    gradient.addColorStop(0, '#FF69B4');
+                    gradient.addColorStop(0.5, '#FF4500');
+                    gradient.addColorStop(1, '#FFD700');
+                    break;
+                case 'gradient-ocean':
+                    gradient = ctx.createLinearGradient(x, y + height, x, y);
+                    gradient.addColorStop(0, '#006400');
+                    gradient.addColorStop(0.5, '#4682B4');
+                    gradient.addColorStop(1, '#87CEEB');
+                    break;
+                default:
+                    gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+                    gradient.addColorStop(0, '#FF0000');
+                    gradient.addColorStop(1, '#0000FF');
+            }
+            return gradient;
+        }
+        
+        function adjustBrightness(hex, percent) {
+            const num = parseInt(hex.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+        
+        function drawNinja() {
+            if (deathAnimation.active) {
+                const progress = deathAnimation.frame / deathAnimation.maxFrames;
+                const alpha = 1 - progress;
+                const scale = 1 + progress * 0.5;
+                const rotation = progress * Math.PI * 2;
+                
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(ninja.x + ninja.width/2, ninja.y + ninja.height/2);
+                ctx.rotate(rotation);
+                ctx.scale(scale, scale);
+                
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const distance = progress * 20;
+                    const x = Math.cos(angle) * distance - ninja.width/2;
+                    const y = Math.sin(angle) * distance - ninja.height/2;
+                    
+                    ctx.fillStyle = getCurrentNinjaColor();
+                    ctx.fillRect(x, y, 4, 4);
+                }
+                
+                ctx.restore();
+                return;
+            }
+            
+            const currentColor = getCurrentNinjaColor();
+            
+            // Create particles for gradient colors in both day and night mode
+            if (currentColor.startsWith('gradient-') && !ninja.onGround) {
+                createParticle(ninja.x, ninja.y, currentColor);
+            }
+            
+            if (currentColor === 'rainbow') {
+                const gradient = ctx.createLinearGradient(ninja.x, ninja.y, ninja.x + ninja.width, ninja.y + ninja.height);
+                const time = Date.now() * 0.01;
+                for (let i = 0; i <= 1; i += 0.1) {
+                    const hue = (time + i * 360) % 360;
+                    gradient.addColorStop(i, `hsl(${hue}, 100%, 50%)`);
+                }
+                ctx.fillStyle = gradient;
+                
+                if (isNightMode) {
+                    ctx.shadowColor = 'rgba(255,255,255,0.8)';
+                    ctx.shadowBlur = 20;
+                }
+            } else if (currentColor.startsWith('gradient-')) {
+                ctx.fillStyle = createGradient(currentColor, ninja.x, ninja.y, ninja.width, ninja.height);
+            } else {
+                ctx.fillStyle = currentColor;
+            }
+            
+            ctx.fillRect(ninja.x, ninja.y, ninja.width, ninja.height);
+            
+            ctx.fillStyle = currentColor === 'rainbow' || currentColor.startsWith('gradient-') ? '#16213e' : adjustBrightness(currentColor, -20);
+            ctx.fillRect(ninja.x + 5, ninja.y + 5, ninja.width - 10, 15);
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(ninja.x + 8, ninja.y + 8, 3, 3);
+            ctx.fillRect(ninja.x + ninja.width - 11, ninja.y + 8, 3, 3);
+            
+            ctx.strokeStyle = currentColor === 'rainbow' || currentColor.startsWith('gradient-') ? '#000' : currentColor;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(ninja.x + 5, ninja.y + 15);
+            ctx.lineTo(ninja.x - 5, ninja.y + 10);
+            ctx.moveTo(ninja.x + ninja.width - 5, ninja.y + 15);
+            ctx.lineTo(ninja.x + ninja.width + 5, ninja.y + 10);
+            ctx.moveTo(ninja.x + 8, ninja.y + ninja.height);
+            ctx.lineTo(ninja.x + 3, ninja.y + ninja.height + 8);
+            ctx.moveTo(ninja.x + ninja.width - 8, ninja.y + ninja.height);
+            ctx.lineTo(ninja.x + ninja.width - 3, ninja.y + ninja.height + 8);
+            ctx.stroke();
+            
+            if (isNightMode && currentColor === 'rainbow') {
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        function drawSpaceBackground() {
+            if (!isSpaceMode) return;
+            
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 137.5) % canvas.width;
+                const y = (i * 98.3) % (canvas.height - 80);
+                const size = Math.sin(i) > 0.8 ? 2 : 1;
+                ctx.fillRect(x, y, size, size);
+            }
+            
+            ctx.fillStyle = '#C0C0C0';
+            ctx.fillRect(0, groundY + ninja.height, canvas.width, canvas.height - groundY - ninja.height);
+            
+            ctx.fillStyle = '#A0A0A0';
+            for (let i = 0; i < canvas.width; i += 100) {
+                ctx.beginPath();
+                ctx.arc(i + 50, groundY + ninja.height + 20, 15, 0, Math.PI);
+                ctx.fill();
+            }
+        }
+        
+        function getObstacleColors() {
+            if (isSpaceMode) {
+                return { base: '#696969', accent: '#C0C0C0' };
+            }
+            
+            const colors = [
+                { base: '#8B4513', accent: '#A0522D' },
+                { base: '#696969', accent: '#808080' },
+                { base: '#2F4F4F', accent: '#708090' },
+                { base: '#8B0000', accent: '#CD5C5C' },
+                { base: '#483D8B', accent: '#6A5ACD' },
+                { base: '#8B008B', accent: '#DA70D6' },
+                { base: '#B8860B', accent: '#FFD700' }
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+        
+        function drawObstacle(obstacle) {
+            const colors = obstacle.colors || getObstacleColors();
+            
+            if (isNightMode || isSpaceMode) {
+                ctx.shadowColor = colors.accent;
+                ctx.shadowBlur = 15;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+            }
+            
+            if (obstacle.type === 'block') {
+                ctx.fillStyle = colors.base;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                
+                if (isSpaceMode) {
+                    ctx.fillStyle = colors.accent;
+                    ctx.beginPath();
+                    ctx.arc(obstacle.x + obstacle.width/2, obstacle.y + 10, 5, 0, Math.PI);
+                    ctx.fill();
+                } else {
+                    ctx.strokeStyle = colors.accent;
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < obstacle.height; i += 15) {
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x, obstacle.y + i);
+                        ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + i);
+                        ctx.stroke();
+                    }
+                }
+            } else if (obstacle.type === 'gap') {
+                ctx.fillStyle = colors.base;
+                ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.gapStart);
+                ctx.fillRect(obstacle.x, obstacle.gapEnd, obstacle.width, canvas.height - obstacle.gapEnd);
+                
+                if (isSpaceMode) {
+                    ctx.strokeStyle = colors.accent;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(obstacle.x, 0, obstacle.width, obstacle.gapStart);
+                    ctx.strokeRect(obstacle.x, obstacle.gapEnd, obstacle.width, canvas.height - obstacle.gapEnd);
+                } else {
+                    ctx.strokeStyle = colors.accent;
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < obstacle.gapStart; i += 15) {
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x, i);
+                        ctx.lineTo(obstacle.x + obstacle.width, i);
+                        ctx.stroke();
+                    }
+                    for (let i = obstacle.gapEnd; i < canvas.height; i += 15) {
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.x, i);
+                        ctx.lineTo(obstacle.x + obstacle.width, i);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            if (isNightMode || isSpaceMode) {
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        function createObstacle() {
+            const now = Date.now();
+            if (now - lastObstacleTime > 1800 + Math.random() * 1200) {
+                const obstacleType = Math.random() < 0.7 ? 'block' : 'gap';
+                const colors = getObstacleColors();
+                
+                if (obstacleType === 'block') {
+                    const height = 40 + Math.random() * 80;
+                    obstacles.push({
+                        type: 'block',
+                        x: canvas.width,
+                        y: groundY + ninja.height - height,
+                        width: 30 + Math.random() * 50,
+                        height: height,
+                        colors: colors
+                    });
+                } else {
+                    const gapSize = 110 + Math.random() * 70;
+                    const gapStart = 90 + Math.random() * 80;
+                    obstacles.push({
+                        type: 'gap',
+                        x: canvas.width,
+                        width: 25 + Math.random() * 15,
+                        gapStart: gapStart,
+                        gapEnd: gapStart + gapSize,
+                        colors: colors
+                    });
+                }
+                lastObstacleTime = now;
+            }
+        }
+        
+        function updateObstacles() {
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= gameSpeed * speedMultiplier;
+                
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    score++;
+                    document.getElementById('score').textContent = score;
+                    
+                    if (score % 5 === 0) {
+                        gameSpeed += 0.3;
+                    }
+                }
+            }
+        }
+        
+        function checkCollisions() {
+            if (deathAnimation.active) return;
+            
+            for (let obstacle of obstacles) {
+                if (obstacle.type === 'block') {
+                    if (ninja.x < obstacle.x + obstacle.width &&
+                        ninja.x + ninja.width > obstacle.x &&
+                        ninja.y < obstacle.y + obstacle.height &&
+                        ninja.y + ninja.height > obstacle.y) {
+                        startDeathAnimation();
+                        return;
+                    }
+                } else if (obstacle.type === 'gap') {
+                    if (ninja.x < obstacle.x + obstacle.width && ninja.x + ninja.width > obstacle.x) {
+                        if (ninja.y < obstacle.gapStart || ninja.y + ninja.height > obstacle.gapEnd) {
+                            startDeathAnimation();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function startDeathAnimation() {
+            deathAnimation.active = true;
+            deathAnimation.frame = 0;
+        }
+        
+        function updateNinja() {
+            if (!isSpaceMode) {
+                ninja.velocityY += gravity;
+                ninja.y += ninja.velocityY;
+                
+                ninja.x += ninja.velocityX;
+                ninja.velocityX *= 0.92;
+                
+                if (ninja.x < 50) ninja.x = 50;
+                if (ninja.x > 200) ninja.x = 200;
+                
+                if (ninja.y >= groundY) {
+                    ninja.y = groundY;
+                    ninja.velocityY = 0;
+                    ninja.onGround = true;
+                    ninja.hasDoubleJump = false;
+                    ninja.velocityX *= 0.8;
+                } else {
+                    ninja.onGround = false;
+                }
+                
+                if (ninja.y < 0) {
+                    ninja.y = 0;
+                    ninja.velocityY = 0;
+                }
+            } else {
+                // Space mode with slight gravity
+                ninja.velocityY += 0.15; // Gentle downward pull
+                ninja.y += ninja.velocityY;
+                ninja.x += ninja.velocityX;
+                ninja.velocityX *= 0.95;
+                ninja.velocityY *= 0.98; // Slight drag
+                
+                if (ninja.x < 50) ninja.x = 50;
+                if (ninja.x > 200) ninja.x = 200;
+                if (ninja.y < 0) ninja.y = 0;
+                if (ninja.y > canvas.height - ninja.height) ninja.y = canvas.height - ninja.height;
+                
+                ninja.onGround = false;
+                ninja.hasDoubleJump = true;
+            }
+        }
+        
+        function spaceDown() {
+            if (gameState !== 'playing' || !isSpaceMode || deathAnimation.active) return;
+            ninja.velocityY += 3;
+        }
+        
+        function gameOver() {
+            gameState = 'gameOver';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('pointsEarned').textContent = score;
+            document.getElementById('playerName').value = ninjaName;
+            
+            jumpPoints += score;
+            localStorage.setItem('jumpPoints', jumpPoints.toString());
+            updateJumpPointsDisplay();
+            
+            document.getElementById('gameOver').style.display = 'block';
+        }
+        
+        async function saveScoreAsync() {
+            const playerName = document.getElementById('playerName').value.trim() || ninjaName || 'Anonymous';
+            const scoreData = {
+                name: playerName,
+                score: score,
+                timestamp: new Date().toISOString().split('T')[0]
+            };
+            
+            if (isOnline) {
+                try {
+                    const response = await fetch('https://caseyfenton.net/api/leaderboard.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(scoreData)
+                    });
+                    
+                    if (response.ok) {
+                        const newLeaderboard = await response.json();
+                        leaderboard = newLeaderboard;
+                        updateLeaderboard();
+                    }
+                } catch (error) {
+                    console.log('Failed to save to server, saving locally');
+                    saveScoreLocally(scoreData);
+                }
+            } else {
+                saveScoreLocally(scoreData);
+            }
+            
+            showShop();
+        }
+        
+        function saveScoreLocally(scoreData) {
+            let localLeaderboard = JSON.parse(localStorage.getItem('localLeaderboard') || '[]');
+            localLeaderboard.push(scoreData);
+            localLeaderboard.sort((a, b) => b.score - a.score);
+            localLeaderboard = localLeaderboard.slice(0, 10);
+            localStorage.setItem('localLeaderboard', JSON.stringify(localLeaderboard));
+            
+            if (!isOnline) {
+                leaderboard = localLeaderboard;
+                updateLeaderboard();
+            }
+        }
+        
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('https://caseyfenton.net/api/leaderboard.php');
+                if (response.ok) {
+                    leaderboard = await response.json();
+                    isOnline = true;
+                    document.getElementById('connectionStatus').innerHTML = '🌐 Online';
+                    document.getElementById('connectionStatus').className = 'connection-status online';
+                } else {
+                    throw new Error('Server response not ok');
+                }
+            } catch (error) {
+                isOnline = false;
+                leaderboard = JSON.parse(localStorage.getItem('localLeaderboard') || '[]');
+                document.getElementById('connectionStatus').innerHTML = '📱 Offline Mode';
+                document.getElementById('connectionStatus').className = 'connection-status offline';
+            }
+            updateLeaderboard();
+        }
+        
+        function updateLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '';
+            
+            if (leaderboard.length === 0) {
+                list.innerHTML = '<div>No scores yet!</div>';
+                return;
+            }
+            
+            leaderboard.forEach((entry, index) => {
+                const scoreEntry = document.createElement('div');
+                scoreEntry.className = 'score-entry';
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                scoreEntry.innerHTML = `${medal} ${index + 1}. ${entry.name} - ${entry.score} pts`;
+                list.appendChild(scoreEntry);
+            });
+        }
+        
+        function createGradientCSS(type) {
+            switch(type) {
+                case 'gradient-fire':
+                    return 'linear-gradient(to top, #FF0000, #FF4500, #FFD700)';
+                case 'gradient-ice':
+                    return 'linear-gradient(to bottom, #E0FFFF, #87CEEB, #4682B4)';
+                case 'gradient-earth':
+                    return 'linear-gradient(to bottom, #8B4513, #A0522D, #228B22)';
+                case 'gradient-storm':
+                    return 'linear-gradient(to right, #2F4F4F, #708090, #191970)';
+                case 'gradient-sunset':
+                    return 'linear-gradient(45deg, #FF69B4, #FF4500, #FFD700)';
+                case 'gradient-ocean':
+                    return 'linear-gradient(to top, #006400, #4682B4, #87CEEB)';
+                default:
+                    return 'linear-gradient(45deg, #FF0000, #0000FF)';
+            }
+        }
+        
+        function updateColorGrid() {
+            const grid = document.getElementById('colorGrid');
+            grid.innerHTML = '';
+            
+            ninjaColors.forEach((color, index) => {
+                const option = document.createElement('div');
+                option.className = 'color-option';
+                
+                const isOwned = ownedColors.includes(index);
+                const canAfford = jumpPoints >= color.price;
+                const isSelected = index === selectedColorIndex;
+                
+                if (isSelected) option.classList.add('selected');
+                if (isOwned) option.classList.add('owned');
+                else if (canAfford) option.classList.add('affordable');
+                else option.classList.add('locked');
+                
+                const preview = document.createElement('div');
+                preview.className = 'ninja-preview';
+                
+                if (color.color === 'rainbow') {
+                    preview.classList.add('rainbow');
+                    if (isNightMode) preview.classList.add('rainbow-glow');
+                } else if (color.color.startsWith('gradient-')) {
+                    preview.style.background = createGradientCSS(color.color);
+                } else {
+                    preview.style.backgroundColor = color.color;
+                }
+                
+                const name = document.createElement('div');
+                name.className = 'color-name';
+                name.textContent = color.name;
+                
+                const price = document.createElement('div');
+                price.className = 'color-price';
+                price.textContent = isOwned ? 'OWNED' : `${color.price}pts`;
+                
+                option.appendChild(preview);
+                option.appendChild(name);
+                option.appendChild(price);
+                
+                option.addEventListener('click', () => {
+                    if (isOwned) {
+                        selectedColorIndex = index;
+                        updateColorGrid();
+                    } else if (canAfford) {
+                        if (confirm(`Purchase ${color.name} for ${color.price} jump points?`)) {
+                            jumpPoints -= color.price;
+                            ownedColors.push(index);
+                            selectedColorIndex = index;
+                            localStorage.setItem('jumpPoints', jumpPoints.toString());
+                            localStorage.setItem('ownedColors', JSON.stringify(ownedColors));
+                            updateJumpPointsDisplay();
+                            updateColorGrid();
+                        }
+                    }
+                });
+                
+                grid.appendChild(option);
+            });
+        }
+        
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (isSpaceMode) {
+                drawSpaceBackground();
+            }
+            
+            if (gameState === 'playing') {
+                if (deathAnimation.active) {
+                    deathAnimation.frame++;
+                    if (deathAnimation.frame >= deathAnimation.maxFrames) {
+                        gameOver();
+                    }
+                } else {
+                    createObstacle();
+                    updateObstacles();
+                    updateNinja();
+                    checkCollisions();
+                    updateParticles();
+                }
+                
+                drawParticles();
+                drawNinja();
+                obstacles.forEach(drawObstacle);
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // KEYBOARD CONTROLS
+        document.addEventListener('keydown', (e) => {
+            if (gameState === 'nameInput') {
+                if (e.code === 'Enter') {
+                    e.preventDefault();
+                    setNinjaName();
+                }
+            } else if (gameState === 'shop' || gameState === 'devMenu') {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    startGame();
+                }
+            } else if (gameState === 'playing') {
+                if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !deathAnimation.active) {
+                    e.preventDefault();
+                    jump();
+                }
+                if ((e.code === 'KeyS' || e.code === 'ArrowDown') && isSpaceMode && !deathAnimation.active) {
+                    e.preventDefault();
+                    spaceDown();
+                }
+            } else if (gameState === 'gameOver') {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    e.preventDefault();
+                    saveScoreAsync();
+                }
+            }
+        });
+        
+        // INITIALIZE GAME
+        const savedName = localStorage.getItem('ninjaName');
+        if (savedName) {
+            ninjaName = savedName;
+            document.getElementById('ninjaNameInput').value = savedName;
+        }
+        
+        updateJumpPointsDisplay();
+        loadLeaderboard();
+        gameLoop();
+    </script>
+</body>
+</html>
